@@ -1,5 +1,5 @@
 <template>
-  <el-dialog v-model="drawerVisible" :destroy-on-close="true" size="450px" title="应用注册">
+  <el-dialog v-model="drawerVisible" :destroy-on-close="true" size="450px" title="属性注册">
     <el-form
       ref="ruleFormRef"
       label-width="100px"
@@ -8,13 +8,13 @@
       :disabled="drawerProps.isView"
       :model="registerProps"
     >
-      <el-form-item label="应用名" prop="applicationsName">
-        <el-input v-model="registerProps.userName" placeholder="请填写应用名" clearable></el-input>
+      <el-form-item label="用户名" prop="applicationsName">
+        <el-input v-model="registerProps.userName" placeholder="请填写用户名" clearable></el-input>
       </el-form-item>
-      <el-form-item label="业务域" prop="businessDomain">
+      <el-form-item label="用户属性" prop="businessDomain">
         <el-input v-model="registerProps.userAttribute" placeholder="请填写用户属性" clearable></el-input>
       </el-form-item>
-      <el-form-item label="业务部门" prop="businessUnit">
+      <el-form-item label="用户归口" prop="businessUnit">
         <el-input v-model="registerProps.userOccupation" placeholder="请填写用户归口" clearable></el-input>
       </el-form-item>
     </el-form>
@@ -69,6 +69,11 @@ const handleSubmit = () => {
       await drawerProps.value.api!(registerProps.value);
       ElMessage.success({ message: `注册成功！` });
       drawerProps.value.getTableList!();
+      registerProps.value = {
+        userName: "",
+        userAttribute: "",
+        userOccupation: ""
+      };
       drawerVisible.value = false;
     } catch (error) {
       console.log(error);

@@ -44,7 +44,6 @@ export const logoutApi = () => {
 export const getCaptchaId = async (): Promise<string | undefined> => {
   // 返回图片URL
   try {
-    console.log("请求后端验证码");
     const response = await axios.post(
       `api/getCaptcha`,
       {},

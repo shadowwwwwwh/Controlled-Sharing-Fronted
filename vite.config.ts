@@ -46,7 +46,7 @@ export default defineConfig(({ mode }: ConfigEnv): UserConfig => {
       proxy: {
         "/api": {
           target: "http://abe_server:30080",
-          // target: "http://39.96.137.165:30080",
+          //target: "http://39.96.137.165:30080",
           changeOrigin: true,
           // rewrite: (path: string) => path.replace(/^\/api/, "")
           rewrite: path => path,

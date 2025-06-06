@@ -1,5 +1,5 @@
 <template>
-  <el-dialog v-model="drawerVisible" :destroy-on-close="true" size="450px" title="准入令牌">
+  <el-dialog v-model="drawerVisible" :destroy-on-close="true" size="450px" title="应用更新">
     <el-form
       ref="ruleFormRef"
       label-width="100px"
@@ -53,14 +53,13 @@ interface Params {
 }
 // 接收父组件传过来的参数
 const acceptParams = (params: Params) => {
-
   // 进行字段转换
   const transformedRow: App.ReqApplicationUpdate = {
     applicationName_old: params.row.ApplicationName || "", // 旧值
-    applicationName: "", // 用户新输入的
-    businessDomain: "",
-    businessUnit: "",
-    manager: ""
+    applicationName: params.row.ApplicationName || "", // 用户新输入的
+    businessDomain: params.row.Domain || "",
+    businessUnit: params.row.Department || "",
+    manager: params.row.Responsible || ""
   };
 
   // 赋值转换后的数据
@@ -78,7 +77,7 @@ const handleSubmit = () => {
     if (!valid) return;
     try {
       await drawerProps.value.api!(drawerProps.value.row);
-      ElMessage.success({ message: `${drawerProps.value}用户成功！` });
+      ElMessage.success({ message: `${drawerProps.value.row.applicationName}用户成功！` });
       drawerProps.value.getTableList!();
       drawerVisible.value = false;
     } catch (error) {

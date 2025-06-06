@@ -8,14 +8,14 @@
       :model="drawerProps.row"
       :hide-required-asterisk="drawerProps.isView"
     >
-      <el-form-item label="应用名" prop="applicationsName">
-        <el-input v-model="drawerProps.row.userName" placeholder="请填写应用名" clearable :disabled="true"></el-input>
+      <el-form-item label="用户名" prop="applicationsName">
+        <el-input v-model="drawerProps.row.userName" placeholder="请填写用户名" clearable :disabled="true"></el-input>
       </el-form-item>
-      <el-form-item label="业务域" prop="businessDomain">
+      <el-form-item label="用户属性" prop="businessDomain">
         <el-input v-model="drawerProps.row.userAttribute" placeholder="请填写用户属性" clearable></el-input>
       </el-form-item>
-      <el-form-item label="业务部门" prop="businessUnit">
-        <el-input v-model="drawerProps.row.userOccupation" placeholder="请填写用户归口" clearable :disabled="true"></el-input>
+      <el-form-item label="用户归口" prop="businessUnit">
+        <el-input v-model="drawerProps.row.userOccupation" placeholder="null" clearable :disabled="true"></el-input>
       </el-form-item>
     </el-form>
     <template #footer>

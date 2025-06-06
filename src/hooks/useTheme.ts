@@ -32,7 +32,6 @@ export const useTheme = () => {
   const changePrimary = (val: string | null) => {
     // 强制将主题色设置为蓝色
     val = BLUE_PRIMARY;
-    ElMessage({ type: "success", message: `主题颜色已设置为 ${BLUE_PRIMARY}` });
     // 计算主题颜色变化
     document.documentElement.style.setProperty("--el-color-primary", val);
     document.documentElement.style.setProperty(

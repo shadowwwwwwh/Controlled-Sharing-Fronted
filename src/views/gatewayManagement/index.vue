@@ -37,6 +37,7 @@
       :data-callback="dataCallback"
       :request-api="getGatewayList"
       :table-search-props="tableSearchProps"
+      ref="proTable"
     >
       <!-- 新增搜索栏头部插槽 -->
       <template #table-header>
@@ -55,12 +56,11 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from "vue";
+import { onMounted, reactive, ref } from "vue";
 import ProTable from "@/components/ProTable/index.vue";
 import { ElMessage, ElMessageBox } from "element-plus";
-import type { ColumnProps } from "@/components/ProTable/interface";
+import { ColumnProps, ProTableInstance } from "@/components/ProTable/interface";
 import axios from "axios";
-
 // 网关相关状态
 const dialogVisible = ref(false);
 const gatewayForm = reactive({
@@ -69,12 +69,8 @@ const gatewayForm = reactive({
   password: "",
   userCategory: ""
 });
-
-const userCategories = [
-  { value: "dept1", label: "技术部" },
-  { value: "dept2", label: "市场部" },
-  { value: "dept3", label: "财务部" }
-];
+const proTable = ref<ProTableInstance | null>(null);
+const userCategories = ref([]);
 
 // 表格列配置
 const columns = reactive<ColumnProps<any>[]>([
@@ -128,7 +124,7 @@ const saveGateway = async () => {
       return;
     }
 
-    const dataUser = userCategories.find(item => item.value === gatewayForm.userCategory)?.label;
+    const dataUser = userCategories.value.find(item => item.value === gatewayForm.userCategory)?.label;
     const response = await axios.post("/api/gateway/register", {
       gatewayname: gatewayForm.name,
       account: gatewayForm.account,
@@ -146,7 +142,9 @@ const saveGateway = async () => {
         userCategory: ""
       });
       // 刷新列表
-      await getGatewayList({});
+      if (proTable.value) {
+        await proTable.value.getTableList();
+      }
     } else {
       ElMessage.error("注册失败");
     }
@@ -195,7 +193,9 @@ const deleteGateway = async (row: any) => {
         if (response.data.statusCode === 200) {
           ElMessage.success("删除成功");
           // 刷新列表
-          await getGatewayList({});
+          if (proTable.value) {
+            await proTable.value.getTableList();
+          }
         } else {
           ElMessage.error("删除失败");
         }
@@ -206,7 +206,45 @@ const deleteGateway = async (row: any) => {
     // eslint-disable-next-line @typescript-eslint/no-empty-function
     .catch(() => {});
 };
+//获取用户归口
+const getUsers = async () => {
+  try {
+    const response = await axios.post("/api/gateway/getUsers");
 
+    // 假设 occupation 字段包含了类似 userCategories 的数据
+    const result = response.data.occupation || [];
+    console.log("用户归口", result);
+    // 转换数组格式
+    const convertedArray = result
+      .map(item => {
+        if (typeof item === "string" && item.trim() !== "") {
+          return { value: item, label: item };
+        }
+        return null;
+      })
+      .filter(Boolean);
+
+    // 更新 userCategories 的值
+    userCategories.value = convertedArray;
+
+    return {
+      code: 200,
+      data: {
+        list: convertedArray,
+        total: convertedArray.length
+      }
+    };
+  } catch (error) {
+    ElMessage.error("获取用户信息失败");
+    return {
+      code: 500,
+      data: {
+        list: [],
+        total: 0
+      }
+    };
+  }
+};
 // 其他原有逻辑
 const initParam = reactive({});
 const dataCallback = (data: any) => ({ list: data.list, total: data.total });
@@ -220,6 +258,9 @@ const cancel = () => {
     userCategory: ""
   });
 };
+onMounted(() => {
+  getUsers();
+});
 </script>
 
 <style scoped lang="scss">

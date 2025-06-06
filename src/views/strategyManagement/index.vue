@@ -49,7 +49,6 @@
         <el-table :data="pendingStrategies" border style="width: 100%">
           <el-table-column type="index" label="序号" width="60" align="center" />
           <el-table-column prop="dataUser" label="数据使用方" width="180" />
-          <el-table-column prop="userCategory" label="归口" width="180" />
           <el-table-column prop="accessFields" label="访问字段" />
           <el-table-column label="操作" width="100">
             <template #default="{ $index }">
@@ -80,7 +79,7 @@
     </el-dialog>
 
     <!-- 策略列表表格 -->
-    <ProTable :columns="columns" :data-callback="dataCallback" :request-api="getStrategyList">
+    <ProTable ref="proTable" :columns="columns" :data-callback="dataCallback" :request-api="getStrategyList">
       <template #operation="scope">
         <el-button type="primary" link @click="showDetail(scope.row)">查看详情</el-button>
         <el-button type="danger" link @click="invalidStrategy(scope.row.strategyCode)">作废</el-button>
@@ -94,9 +93,6 @@
           <el-select v-model="addPolicyForm.dataUser" placeholder="请选择">
             <el-option v-for="item in dataUsers" :key="item.value" :label="item.label" :value="item.value" />
           </el-select>
-        </el-form-item>
-        <el-form-item label="归口">
-          <el-input v-model="addPolicyForm.userCategory" placeholder="请输入归口" />
         </el-form-item>
         <el-form-item label="访问字段">
           <el-input v-model="addPolicyForm.accessFields" placeholder="请输入访问字段" />
@@ -113,16 +109,17 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from "vue";
+import { onMounted, reactive, ref, nextTick } from "vue";
 import ProTable from "@/components/ProTable/index.vue";
 import { ElMessage, ElMessageBox } from "element-plus";
-import type { ColumnProps } from "@/components/ProTable/interface";
+import { ColumnProps, ProTableInstance } from "@/components/ProTable/interface";
 import axios from "axios";
+import { useRouter } from "vue-router";
 
 // 详情状态
 const detailDialogVisible = ref(false);
 const detailData = ref<any[]>([]);
-
+const proTable = ref<ProTableInstance | null>(null);
 // 策略注册弹窗状态
 const dialogVisible = ref(false);
 // 表单数据
@@ -139,9 +136,9 @@ const dataProviders = ref<any[]>([]);
 const dataUsers = ref<any[]>([]);
 
 const validityPeriods = [
-  { value: "30", label: "30分钟" },
-  { value: "90", label: "90分钟" },
-  { value: "180", label: "180分钟" }
+  { value: "30", label: "一周" },
+  { value: "90", label: "一月" },
+  { value: "180", label: "一年" }
 ];
 
 // 添加策略子弹窗状态
@@ -149,7 +146,6 @@ const addPolicyDialogVisible = ref(false);
 // 添加策略子弹窗表单数据
 const addPolicyForm = reactive({
   dataUser: "",
-  userCategory: "",
   accessFields: ""
 });
 
@@ -164,7 +160,7 @@ const openAddPolicyDialog = () => {
 
 // 确认添加策略
 const confirmAddPolicy = () => {
-  if (!addPolicyForm.dataUser || !addPolicyForm.userCategory || !addPolicyForm.accessFields) {
+  if (!addPolicyForm.dataUser || !addPolicyForm.accessFields) {
     ElMessage.warning("请填写完整的策略详情信息");
     return;
   }
@@ -176,7 +172,6 @@ const confirmAddPolicy = () => {
   });
   addPolicyDialogVisible.value = false;
   addPolicyForm.dataUser = "";
-  addPolicyForm.userCategory = "";
   addPolicyForm.accessFields = "";
 };
 
@@ -184,9 +179,6 @@ const confirmAddPolicy = () => {
 const removeStrategy = (index: number) => {
   pendingStrategies.splice(index, 1);
 };
-
-// 保存策略
-// ... 其他代码保持不变 ...
 
 // 保存策略
 const save = async () => {
@@ -199,14 +191,14 @@ const save = async () => {
     // 处理有效期
     let lifespan;
     if (form.validityPeriod === "30") {
-      lifespan = "30分钟";
+      lifespan = "一周";
     } else if (form.validityPeriod === "90") {
-      lifespan = "90分钟";
+      lifespan = "一月";
     } else {
-      lifespan = "180分钟";
+      lifespan = "一年";
     }
 
-    const policyInfo = pendingStrategies.map(strategy => [strategy.dataUser, strategy.userCategory, strategy.accessFields]);
+    const policyInfo = pendingStrategies.map(strategy => [strategy.dataUser, strategy.accessFields]);
 
     const policies = {
       policyName: form.strategyName,
@@ -226,18 +218,26 @@ const save = async () => {
       ElMessage.success(response.data.statusContent);
       dialogVisible.value = false;
       pendingStrategies.splice(0, pendingStrategies.length);
+      // 清空 form 表单数据
+      form.strategyName = "";
+      form.dataProvider = "";
+      form.validityPeriod = "";
+      // 清空 addPolicyForm 表单数据
+      addPolicyForm.dataUser = "";
+      addPolicyForm.accessFields = "";
       // 刷新策略列表
-      getStrategyList();
+      await nextTick();
+      if (proTable.value) {
+        await proTable.value.getTableList();
+      }
     } else {
       ElMessage.error("策略注册失败，请稍后重试");
     }
   } catch (error) {
     console.error("策略注册出错:", error);
-    ElMessage.error("策略注册失败，数据使用方、用户归口或访问字段不存在");
+    ElMessage.error("策略注册失败，数据使用方访问字段不存在");
   }
 };
-
-// ... 其他代码保持不变 ...
 
 // 取消
 const cancel = () => {
@@ -245,7 +245,6 @@ const cancel = () => {
   pendingStrategies.splice(0, pendingStrategies.length);
 };
 
-// 查看详情方法
 // 查看详情方法
 const showDetail = async (row: any) => {
   try {
@@ -282,6 +281,7 @@ const showDetail = async (row: any) => {
   }
 };
 // 作废方法
+const initParam = reactive({ type: 1 });
 const invalidStrategy = async (id: number) => {
   console.log("作废id", id);
   ElMessageBox.confirm("确认要作废该策略吗？", "提示", {
@@ -304,7 +304,10 @@ const invalidStrategy = async (id: number) => {
         );
         ElMessage.success("作废成功");
         // 刷新策略列表
-        await getStrategyList();
+        await nextTick();
+        if (proTable.value) {
+          await proTable.value.getTableList();
+        }
       } catch (error) {
         ElMessage.error("作废策略失败");
       }
@@ -328,13 +331,7 @@ const columns = reactive<ColumnProps<any>[]>([
   { prop: "operation", label: "操作", width: 330, fixed: "right", slot: "operation" }
 ]);
 
-// const initParam = reactive({
-//   pageIndex: 1,
-//   pageSize: 10
-// });
 const dataCallback = (data: any) => ({ list: data.list, total: data.total });
-ElMessage.success("已重置搜索条件");
-// const tableSearchProps = reactive({ style: { width: "100%" } });
 
 // 获取策略列表
 const getStrategyList = async (params: any) => {
@@ -343,10 +340,11 @@ const getStrategyList = async (params: any) => {
       pageIndex: params.pageIndex || 1,
       pageSize: params.pageSize || 3
     });
-    console.log(response.data);
 
+    // 确保 PolicyInfo 至少是个空数组
+    const policyList = response.data?.policyInfo || [];
     // 映射数据字段
-    const mappedList = response.data.PolicyInfo.map(item => ({
+    const mappedList = policyList.map((item: any) => ({
       strategyName: item.Name,
       dataProvider: item.Provider,
       strategyCode: item.Code,
@@ -354,18 +352,17 @@ const getStrategyList = async (params: any) => {
       validityPeriod: item.Expiration,
       status: item.Status
     }));
-
     const newRes = {
       data: {
         list: mappedList,
-        total: response.data.totalCount
+        total: response.data?.totalCount || 0
       },
       success: true
     };
 
     return newRes;
   } catch (error) {
-    console.error("请求出错:");
+    console.error("请求出错", error);
     ElMessage.error("获取策略列表失败");
     return { data: { list: [], total: 0 }, success: false };
   }
@@ -389,7 +386,12 @@ const fetchUserInfo = async () => {
     ElMessage.error("获取用户信息失败");
   }
 };
+const router = useRouter(); // 获取 router 实例
 
+// 使用导航守卫 beforeEach 在每次路由切换前调用 fetchUserInfo 函数
+router.beforeEach(async () => {
+  await fetchUserInfo();
+});
 onMounted(() => {
   fetchUserInfo();
 });

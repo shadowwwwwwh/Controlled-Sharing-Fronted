@@ -75,6 +75,13 @@ const handleSubmit = () => {
       await drawerProps.value.api!(registerProps.value);
       ElMessage.success({ message: `注册成功！` });
       drawerProps.value.getTableList!();
+      // 清空表单数据
+      registerProps.value = {
+        applicationName: "",
+        businessDomain: "",
+        businessUnit: "",
+        manager: ""
+      };
       drawerVisible.value = false;
     } catch (error) {
       console.log(error);

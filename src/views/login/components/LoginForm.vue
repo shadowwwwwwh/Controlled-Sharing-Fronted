@@ -1,7 +1,7 @@
 <template>
   <el-form ref="loginFormRef" :model="loginForm" :rules="loginRules" size="large">
     <el-form-item prop="username">
-      <el-input v-model="loginForm.username" placeholder="请输入用户名：pkc">
+      <el-input v-model="loginForm.username" placeholder="请输入用户名">
         <template #prefix>
           <el-icon class="el-input__icon">
             <user />
@@ -10,13 +10,7 @@
       </el-input>
     </el-form-item>
     <el-form-item prop="password">
-      <el-input
-        v-model="loginForm.password"
-        type="password"
-        placeholder="请输入密码：password"
-        show-password
-        autocomplete="new-password"
-      >
+      <el-input v-model="loginForm.password" type="password" placeholder="请输入密码" show-password autocomplete="new-password">
         <template #prefix>
           <el-icon class="el-input__icon">
             <lock />
@@ -24,7 +18,7 @@
         </template>
       </el-input>
     </el-form-item>
-    <el-form-item prop="code">
+    <el-form-item prop="captcha">
       <el-row>
         <el-col :span="8">
           <el-input v-model="loginForm.captcha" placeholder="验证码" autocomplete="off" style="margin-top: 10%" />
@@ -88,23 +82,12 @@ const login = (formEl: FormInstance | undefined) => {
   formEl.validate(async valid => {
     if (!valid) return;
     loading.value = true;
-    // if (loginForm.code.toLowerCase() !== identifyCode.value.toLowerCase()) {
-    //   ElMessage.error("验证码错误");
-    //   refreshCode();
-    //   loginForm.code = "";
-    //   loading.value = false;
-    //   return;
-    // }
     try {
       // 1.执行登录接口
       const data = await loginApi({ ...loginForm });
-      // 2.判断是否成功
-      console.log("登录数据");
-      console.log(data);
       if (data.statusCode !== 200) {
         ElMessage.error("登录失败");
-        refreshCode();
-        loginForm.captcha = "";
+        resetForm(formEl);
         loading.value = false;
         return;
       }
@@ -131,6 +114,7 @@ const login = (formEl: FormInstance | undefined) => {
     } catch (error) {
       console.error("登录失败:", error);
       ElMessage.error("登录失败");
+      resetForm(formEl);
     } finally {
       loading.value = false;
     }
@@ -141,16 +125,10 @@ const login = (formEl: FormInstance | undefined) => {
 const resetForm = (formEl: FormInstance | undefined) => {
   if (!formEl) return;
   formEl.resetFields();
+  refreshCode();
 };
-//验证码
-// const makecode = (codes, length) => {
-//   identifyCode.value = "";
-//   for (let i = 0; i < length; i++) {
-//     identifyCode.value += codes[Math.floor(Math.random() * codes.length)];
-//   }
-// };
+
 const makecode = async () => {
-  console.log("make code 获取验证码");
   try {
     const response = await getCaptchaId(); // 发送请求到后端
     return response || null;
@@ -165,11 +143,9 @@ const makecode = async () => {
 //   identifyCode.value = makecode();
 // };
 const refreshCode = async () => {
-  console.log("刷新验证码");
   identifyCode.value = await makecode();
 };
 onMounted(() => {
-  console.log("mounted 加载验证码");
   refreshCode();
   // 监听 enter 事件（调用登录）
   document.onkeydown = (e: KeyboardEvent) => {
